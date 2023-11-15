@@ -13,11 +13,13 @@ object TypedCartActor {
   final case class AddItem(item: Any) extends Command
   final case class RemoveItem(item: Any) extends Command
   final case class GetItems(replyTo: ActorRef[Cart]) extends Command
-  final case class StartCheckout(orderManager: ActorRef[OrderManager.Command]) extends Command
+  final case class StartCheckout(replyTo: ActorRef[CheckoutStarted]) extends Command
   case object ConfirmCheckoutClosed extends Command
   case object ConfirmCheckoutCancelled extends Command
 
   private case object ExpireCart extends Command
+
+  final case class CheckoutStarted(checkout: ActorRef[TypedCheckout.Command])
 
   private val cartTimerDuration: FiniteDuration = 5.seconds
 
@@ -55,19 +57,19 @@ object TypedCartActor {
         case RemoveItem(item) if cart.contains(item) =>
           timer.cancel()
           nonEmpty(cart.removeItem(item), scheduleTimer(context))
-        case StartCheckout(orderManager) =>
+        case StartCheckout(replyTo) =>
           timer.cancel()
-          inCheckout(cart, orderManager)
+          inCheckout(cart, replyTo)
         case ExpireCart =>
           empty
         case _ => Behaviors.same
       }
     }
 
-  private def inCheckout(cart: Cart, orderManager: ActorRef[OrderManager.Command]): Behavior[Command] =
+  private def inCheckout(cart: Cart, replyTo: ActorRef[CheckoutStarted]): Behavior[Command] =
     Behaviors.setup { context =>
       val checkout = context.spawn(TypedCheckout(context.self), "Checkout")
-      orderManager ! OrderManager.ConfirmCheckoutStarted(checkout)
+      replyTo ! CheckoutStarted(checkout)
       Behaviors.receiveMessage {
         case GetItems(replyTo) =>
           replyTo ! cart

@@ -41,10 +41,10 @@ class TypedCartTest
 
   it should "start checkout" in {
     val cartActor = testKit.spawn(TypedCartActor())
-    val probe = testKit.createTestProbe[OrderManager.Command]()
+    val probe = testKit.createTestProbe[CheckoutStarted]()
 
     cartActor ! AddItem("item")
     cartActor ! StartCheckout(probe.ref)
-    probe.receiveMessage() shouldBe a[OrderManager.ConfirmCheckoutStarted]
+    probe.receiveMessage() shouldBe a[CheckoutStarted]
   }
 }

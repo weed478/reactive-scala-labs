@@ -32,7 +32,10 @@ object OrderManager {
           replyTo ! ()
           Behaviors.same
         case Buy(replyTo) =>
-          cart ! TypedCartActor.StartCheckout(context.self)
+          val adapter = context.messageAdapter[TypedCartActor.CheckoutStarted] {
+            case TypedCartActor.CheckoutStarted(checkout) => ConfirmCheckoutStarted(checkout)
+          }
+          cart ! TypedCartActor.StartCheckout(adapter)
           startingCheckout(cart, replyTo)
         case _ => Behaviors.same
       }
@@ -56,7 +59,10 @@ object OrderManager {
       Behaviors.receiveMessage {
         case SelectDeliveryAndPaymentMethod(delivery, payment, replyTo) =>
           checkout ! TypedCheckout.SelectDeliveryMethod(delivery)
-          checkout ! TypedCheckout.SelectPayment(payment, context.self)
+          val adapter = context.messageAdapter[TypedCheckout.PaymentStarted] {
+            case TypedCheckout.PaymentStarted(payment) => ConfirmPaymentStarted(payment)
+          }
+          checkout ! TypedCheckout.SelectPayment(payment, adapter)
           startingPayment(checkout, replyTo)
         case _ => Behaviors.same
       }
@@ -77,11 +83,13 @@ object OrderManager {
     checkout: ActorRef[TypedCheckout.Command],
     payment: ActorRef[Payment.Command]
   ): Behavior[OrderManager.Command] =
-    Behaviors.receiveMessage {
-      case Pay(replyTo) =>
-        payment ! Payment.DoPayment
-        doingPayment(checkout, payment, replyTo)
-      case _ => Behaviors.same
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case Pay(replyTo) =>
+          payment ! Payment.DoPayment(context.self)
+          doingPayment(checkout, payment, replyTo)
+        case _ => Behaviors.same
+      }
     }
 
   private def doingPayment(

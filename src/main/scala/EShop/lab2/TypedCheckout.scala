@@ -11,9 +11,11 @@ object TypedCheckout {
 
   sealed trait Command
   final case class SelectDeliveryMethod(method: String) extends Command
-  final case class SelectPayment(payment: String, orderManager: ActorRef[OrderManager.Command]) extends Command
+  final case class SelectPayment(payment: String, replyTo: ActorRef[PaymentStarted]) extends Command
   case object ConfirmPaymentReceived extends Command
   case object CancelCheckout extends Command
+
+  final case class PaymentStarted(payment: ActorRef[Payment.Command])
 
   private case object ExpireCheckout extends Command
   private case object ExpirePayment extends Command
@@ -42,11 +44,11 @@ object TypedCheckout {
   private def selectingPaymentMethod(cart: ActorRef[TypedCartActor.Command], timer: Cancellable): Behavior[TypedCheckout.Command] =
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
-        case SelectPayment(method, orderManager) =>
+        case SelectPayment(method, replyTo) =>
           timer.cancel()
           val paymentTimer = context.scheduleOnce(paymentTimerDuration, context.self, ExpirePayment)
-          val payment = context.spawn(Payment(method, orderManager, context.self), "payment")
-          orderManager ! OrderManager.ConfirmPaymentStarted(payment)
+          val payment = context.spawn(Payment(method, context.self), "payment")
+          replyTo ! PaymentStarted(payment)
           processingPayment(cart, payment, paymentTimer)
         case CancelCheckout | ExpireCheckout =>
           timer.cancel()
@@ -62,6 +64,7 @@ object TypedCheckout {
   ): Behavior[TypedCheckout.Command] =
     Behaviors.receiveMessage {
       case ConfirmPaymentReceived =>
+        timer.cancel()
         closed(cart)
       case ExpirePayment =>
         cancelled(cart)
