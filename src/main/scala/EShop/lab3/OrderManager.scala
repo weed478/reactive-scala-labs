@@ -34,7 +34,7 @@ object OrderManager {
         case Buy(replyTo) =>
           cart ! TypedCartActor.StartCheckout(context.self)
           startingCheckout(cart, replyTo)
-        
+        case _ => Behaviors.same
       }
     }
 
@@ -46,6 +46,7 @@ object OrderManager {
       case ConfirmCheckoutStarted(checkout) =>
         replyTo ! ()
         inCheckout(checkout)
+      case _ => Behaviors.same
     }
 
   private def inCheckout(
@@ -57,6 +58,7 @@ object OrderManager {
           checkout ! TypedCheckout.SelectDeliveryMethod(delivery)
           checkout ! TypedCheckout.SelectPayment(payment, context.self)
           startingPayment(checkout, replyTo)
+        case _ => Behaviors.same
       }
     }
 
@@ -68,6 +70,7 @@ object OrderManager {
       case ConfirmPaymentStarted(payment) =>
         replyTo ! ()
         inPayment(checkout, payment)
+      case _ => Behaviors.same
     }
 
   private def inPayment(
@@ -78,6 +81,7 @@ object OrderManager {
       case Pay(replyTo) =>
         payment ! Payment.DoPayment
         doingPayment(checkout, payment, replyTo)
+      case _ => Behaviors.same
     }
 
   private def doingPayment(
@@ -89,6 +93,7 @@ object OrderManager {
       case ConfirmPaymentReceived =>
         replyTo ! ()
         finished()
+      case _ => Behaviors.same
     }
 
   private def finished(): Behavior[OrderManager.Command] = Behaviors.stopped
