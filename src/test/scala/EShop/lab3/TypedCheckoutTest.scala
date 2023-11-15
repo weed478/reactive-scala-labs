@@ -22,8 +22,11 @@ class TypedCheckoutTest
     val cartProbe = testKit.createTestProbe[TypedCartActor.Command]()
     val checkoutActor = testKit.spawn(TypedCheckout(cartProbe.ref))
 
-    checkoutActor ! CancelCheckout
-    cartProbe.expectMessage(TypedCartActor.ConfirmCheckoutCancelled)
+    checkoutActor ! SelectDeliveryMethod("post")
+    checkoutActor ! SelectPayment("paypal", testKit.createTestProbe[PaymentStarted]().ref)
+    checkoutActor ! ConfirmPaymentReceived
+
+    cartProbe.expectMessage(TypedCartActor.ConfirmCheckoutClosed)
   }
 
 }
