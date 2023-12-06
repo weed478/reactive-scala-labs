@@ -1,19 +1,24 @@
 package EShop.lab2
 
+import EShop.lab3.{OrderManager, Payment}
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 
 import scala.concurrent.duration._
-import EShop.lab3.{OrderManager, Payment}
 
 object TypedCheckout {
 
   sealed trait Command
-  final case class SelectDeliveryMethod(method: String) extends Command
-  final case class SelectPayment(payment: String, replyTo: ActorRef[PaymentStarted]) extends Command
-  case object ConfirmPaymentReceived extends Command
-  case object CancelCheckout extends Command
+  case object StartCheckout                                                                  extends Command
+  case class SelectDeliveryMethod(method: String)                                            extends Command
+  case object CancelCheckout                                                                 extends Command
+  case object ExpireCheckout                                                                 extends Command
+  case class SelectPayment(payment: String, orderManagerRef: ActorRef[OrderManager.Command]) extends Command
+  case object ExpirePayment                                                                  extends Command
+  case object ConfirmPaymentReceived                                                         extends Command
+  case object PaymentRejected                                                                extends Command
+  case object PaymentRestarted                                                               extends Command
 
   final case class PaymentStarted(payment: ActorRef[Payment.Command])
 

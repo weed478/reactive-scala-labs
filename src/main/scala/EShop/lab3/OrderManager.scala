@@ -7,15 +7,16 @@ import akka.actor.typed.{ActorRef, Behavior}
 object OrderManager {
 
   sealed trait Command
-  final case class AddItem(id: String, replyTo: ActorRef[Unit]) extends Command
-  final case class RemoveItem(id: String, replyTo: ActorRef[Unit]) extends Command
-  final case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String, replyTo: ActorRef[Unit]) extends Command
-  final case class Buy(replyTo: ActorRef[Unit]) extends Command
-  final case class Pay(replyTo: ActorRef[Unit]) extends Command
-  
-  final case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Command
-  final case class ConfirmPaymentStarted(paymentRef: ActorRef[Payment.Command]) extends Command
-  case object ConfirmPaymentReceived extends Command
+  case class AddItem(id: String, sender: ActorRef[Ack])                                               extends Command
+  case class RemoveItem(id: String, sender: ActorRef[Ack])                                            extends Command
+  case class SelectDeliveryAndPaymentMethod(delivery: String, payment: String, sender: ActorRef[Ack]) extends Command
+  case class Buy(sender: ActorRef[Ack])                                                               extends Command
+  case class Pay(sender: ActorRef[Ack])                                                               extends Command
+  case class ConfirmCheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command])                     extends Command
+  case class ConfirmPaymentStarted(paymentRef: ActorRef[Payment.Command])                             extends Command
+  case object ConfirmPaymentReceived                                                                  extends Command
+  case object PaymentRejected                                                                         extends Command
+  case object PaymentRestarted                                                                        extends Command
 
   def apply(): Behavior[Command] = start()
 
