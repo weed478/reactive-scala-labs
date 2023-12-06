@@ -10,6 +10,8 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.Serializati
 
 import scala.concurrent.duration._
 import scala.util.Random
+import EShop.lab2.TypedCartActor
+import akka.persistence.PersistentActor
 
 class PersistentCartActorTest
   extends ScalaTestWithActorTestKit(EventSourcedBehaviorTestKit.config)
@@ -17,16 +19,15 @@ class PersistentCartActorTest
   with BeforeAndAfterAll
   with BeforeAndAfterEach {
 
-  override def afterAll: Unit = testKit.shutdownTestKit()
+  override def afterAll(): Unit = testKit.shutdownTestKit()
 
   import EShop.lab2.TypedCartActor._
+  import EShop.lab4.PersistentCartActor._
 
   private val eventSourcedTestKit =
     EventSourcedBehaviorTestKit[Command, Event, State](
       system,
-      new PersistentCartActor {
-        override val cartTimerDuration: FiniteDuration = 1.second
-      }.apply(generatePersistenceId),
+      PersistentCartActor(generatePersistenceId),
       SerializationSettings.disabled
     )
 
@@ -75,9 +76,9 @@ class PersistentCartActorTest
     resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
 
     val resultStartCheckout =
-      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[TypedCartActor.CheckoutStarted]().ref))
 
-    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.event.isInstanceOf[PersistentCartActor.CheckoutStarted] shouldBe true
     resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
   }
 
@@ -88,9 +89,9 @@ class PersistentCartActorTest
     resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
 
     val resultStartCheckout =
-      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[TypedCartActor.CheckoutStarted]().ref))
 
-    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.event.isInstanceOf[PersistentCartActor.CheckoutStarted] shouldBe true
     resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
 
     val resultCancelCheckout =
@@ -107,9 +108,9 @@ class PersistentCartActorTest
     resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
 
     val resultStartCheckout =
-      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[TypedCartActor.CheckoutStarted]().ref))
 
-    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.event.isInstanceOf[PersistentCartActor.CheckoutStarted] shouldBe true
     resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
 
     val resultCloseCheckout =
@@ -126,9 +127,9 @@ class PersistentCartActorTest
     resultAdd.state.isInstanceOf[NonEmpty] shouldBe true
 
     val resultStartCheckout =
-      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[TypedCartActor.CheckoutStarted]().ref))
 
-    resultStartCheckout.event.isInstanceOf[CheckoutStarted] shouldBe true
+    resultStartCheckout.event.isInstanceOf[PersistentCartActor.CheckoutStarted] shouldBe true
     resultStartCheckout.state.isInstanceOf[InCheckout] shouldBe true
 
     val resultAdd2 = eventSourcedTestKit.runCommand(AddItem("Henryk V"))
@@ -139,7 +140,7 @@ class PersistentCartActorTest
 
   it should "not change state to inCheckout from empty" in {
     val resultStartCheckout =
-      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[OrderManager.Command]().ref))
+      eventSourcedTestKit.runCommand(StartCheckout(testKit.createTestProbe[TypedCartActor.CheckoutStarted]().ref))
 
     resultStartCheckout.hasNoEvents shouldBe true
     resultStartCheckout.state shouldBe Empty

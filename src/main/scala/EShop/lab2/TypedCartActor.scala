@@ -17,7 +17,7 @@ object TypedCartActor {
   case object ConfirmCheckoutClosed extends Command
   case object ConfirmCheckoutCancelled extends Command
 
-  private case object ExpireCart extends Command
+  case object ExpireCart extends Command
 
   final case class CheckoutStarted(checkout: ActorRef[TypedCheckout.Command])
 

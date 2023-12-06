@@ -17,8 +17,8 @@ object TypedCheckout {
 
   final case class PaymentStarted(payment: ActorRef[Payment.Command])
 
-  private case object ExpireCheckout extends Command
-  private case object ExpirePayment extends Command
+  case object ExpireCheckout extends Command
+  case object ExpirePayment extends Command
 
   private val checkoutTimerDuration: FiniteDuration = 1.seconds
   private val paymentTimerDuration: FiniteDuration  = 1.seconds
